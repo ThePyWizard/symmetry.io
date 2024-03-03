@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symmetry.io</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <canvas id="canvas" width="800" height="400"></canvas>
+    <div id="tools">
+        <label>
+            <input type="radio" name="mode" value="pencil" checked> Pencil
+        </label>
+        <label>
+            <input type="radio" name="mode" value="eraser"> Eraser
+        </label>
+        <button id="clearButton">Clear</button> <!-- Added clear button -->
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const tools = document.getElementById('tools');
+        const clearButton = document.getElementById('clearButton'); // Added clear button reference
+
+        let drawing = false;
+        let mode = 'pencil'; // Default mode
+
+        // Handle mouse events for drawing
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mousemove', draw);
+
+        // Handle touch events for mobile devices
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchmove', draw);
+
+        // Mode selection
+        tools.addEventListener('change', (event) => {
+            mode = event.target.value;
+        });
+
+        // Clear button click event
+        clearButton.addEventListener('click', clearCanvas);
+
+        function startDrawing(event) {
+            drawing = true;
+            draw(event); // Start drawing immediately
+        }
+
+        function stopDrawing() {
+            drawing = false;
+            context.beginPath(); // Reset path
+        }
+
+        function draw(event) {
+            event.preventDefault(); // Prevent default touch gestures on the canvas
+
+            const x = (event.clientX || event.touches[0].clientX) - canvas.offsetLeft;
+            const y = (event.clientY || event.touches[0].clientY) - canvas.offsetTop;
+
+            if (drawing) {
+                if (mode === 'pencil') {
+                    drawPencil(x, y);
+                } else if (mode === 'eraser') {
+                    erase(x, y);
+                }
+            }
+
+            // Send drawing data to the server
+            socket.emit('draw', { x, y, color: mode === 'eraser' ? '#fff' : '#000', size: 5, mode });
+        }
+
+        function drawPencil(x, y) {
+            context.fillStyle = '#000'; // Change color as needed
+            context.beginPath();
+            context.arc(x, y, 5, 0, 2 * Math.PI);
+            context.fill();
+        }
+
+        function erase(x, y) {
+            context.fillStyle = '#fff'; // Use the background color to simulate erasing
+            context.beginPath();
+            context.arc(x, y, 10, 0, 2 * Math.PI);
+            context.fill();
+        }
+
+        function clearCanvas() {
+            context.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+        }
+
+        // Example: Receive drawing data from the server
+        socket.on('draw', (data) => {
+            if (data.mode === 'pencil') {
+                drawPencil(data.x, data.y);
+            } else if (data.mode === 'eraser') {
+                erase(data.x, data.y);
+            }
+        });
+    </script>
+</body>
+</html>

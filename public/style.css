@@ -1,0 +1,15 @@
+#canvas {
+    border: 1px solid #000;
+    touch-action: none; /* Disable default touch gestures on canvas */
+    width: auto; /* Reset width to default */
+}
+
+#tools {
+    margin-top: 10px;
+}
+
+@media (max-width: 767px) {
+    #canvas {
+        width: 100%; /* Apply width only on mobile devices */
+    }
+}
